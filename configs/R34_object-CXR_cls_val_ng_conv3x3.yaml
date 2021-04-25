@@ -1,0 +1,24 @@
+MODEL:
+    name: resnet34
+    n_classes: 2
+    pretrained: True
+    path:  models/object-CXR/R_34_1x_DA.pt
+    last_layer: layer4
+    last_block: 2
+    phase1: conv3x3
+DATASET:
+    name: object-CXR
+    size: 600
+    path: images/object-CXR_val/images/
+    target_class: null
+RESULTS:
+    dir: results/visualization_on_image/object-CXR_dev/conv3x3/
+    alpha: 0.4
+    DRAW_GT_BBOX:
+        state: True
+        gt_src: images/object-CXR_val/dev.csv
+    POINTING_GAME:
+        state: True
+        tolerance: 25
+        gt_src: images/object-CXR_val/dev.csv
+    save_preds_to: results/visualization_on_image/object-CXR_dev/conv3x3/preds.csv
