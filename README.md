@@ -1,9 +1,23 @@
+<style>
+	img {
+		/* box-sizing: border-box; */
+		width: 250px;
+		height: 250px;
+		margin: 0 auto;
+        object-fit: contain;
+		padding: 0px;
+	}
+</style>
+
 # Explainable IQA on Chest X-Rays
 
 Accepted in MIDL'21: https://openreview.net/forum?id=ln797A8lAb0.
 
 This repository contains the necessary environment to perform explainable medical image quality analysis.
 
+Original Image | NormGrad | GradCAM
+:--------:|:--------:|:-------:
+<div class="markdown-body">![](docs/09361.jpg)</div> | <div class="markdown-body">![](docs/09361_normgrad.png) </div> | <div class="markdown-body">![](docs/09361_gradcam.png) </div>
 
 # Preparatory Steps
 
@@ -46,7 +60,7 @@ The results of Table 2 in our paper can be reproduced by typing in `./reproduce_
 ```
 @inproceedings{Ozer2021,
     title={Explainable Image Quality Analysis of Chest X-Rays},
-    author={Ozer, Caner and Oksuz Ilkay}
+    author={Ozer, Caner and Oksuz, Ilkay}
     booktitle={Medical Imaging with Deep Learning}
     year={2021}
     url={https://openreview.net/forum?id=ln797A8lAb0}
