@@ -1,13 +1,3 @@
-<style>
-	img {
-		/* box-sizing: border-box; */
-		width: 250px;
-		height: 250px;
-		margin: 0 auto;
-        object-fit: contain;
-		padding: 0px;
-	}
-</style>
 
 # Explainable IQA on Chest X-Rays
 
@@ -17,7 +7,7 @@ This repository contains the necessary environment to perform explainable medica
 
 Original Image | NormGrad | GradCAM
 :--------:|:--------:|:-------:
-<div class="markdown-body">![](docs/09361.jpg)</div> | <div class="markdown-body">![](docs/09361_normgrad.png) </div> | <div class="markdown-body">![](docs/09361_gradcam.png) </div>
+![](docs/09361.jpg) | ![](docs/09361_normgrad.png) |![](docs/09361_gradcam.png)
 
 # Preparatory Steps
 
