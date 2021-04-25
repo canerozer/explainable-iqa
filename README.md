@@ -1,5 +1,7 @@
 # Explainable IQA on Chest X-Rays
 
+Accepted in MIDL'21: https://openreview.net/forum?id=ln797A8lAb0.
+
 This repository contains the necessary environment to perform explainable medical image quality analysis.
 
 
