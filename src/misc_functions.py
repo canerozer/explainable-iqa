@@ -2,9 +2,13 @@
 Created on Thu Oct 21 11:09:09 2017
 
 @author: Utku Ozbulak - github.com/utkuozbulak
+@editor: Caner Ozer - github.com/canerozer
 """
 import os
 import copy
+import math
+from functools import reduce
+
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageFilter, UnidentifiedImageError, ImageDraw
@@ -70,7 +74,8 @@ def custom_save_gradient_images(gradient, dst, file_name, obj=""):
     gradient /= (gradient.max() - gradient.min())
     gradient = gradient
     # Save image
-    path_to_file = os.path.join(dst, file_name.split(".")[0] + '.jpg')
+    file_name = ".".join(file_name.split(".")[:-1])
+    path_to_file = os.path.join(dst, file_name + '.jpg')
     save_image(gradient, path_to_file)
 
 
@@ -108,7 +113,7 @@ def custom_save_class_activation_images(org_img, activation_map, dst,
         activation_map (numpy arr): Activation map (grayscale) 0-255
         file_name (str): File name of the exported image
     """
-    if obj:
+    if obj != "":
         #obj = "_" + obj
         dst = os.path.join(dst, obj)
         os.makedirs(dst, exist_ok=True)
@@ -121,11 +126,31 @@ def custom_save_class_activation_images(org_img, activation_map, dst,
     #path_to_file = os.path.join(dst, file_name + obj + ".png")
     #save_image(heatmap, path_to_file)
     # Save heatmap on iamge
-    path_to_file = os.path.join(dst, file_name.split(".")[0] + ".png")
+    file_name = ".".join(file_name.split(".")[:-1])
+    path_to_file = os.path.join(dst, file_name + ".png")
     save_image(heatmap_on_image, path_to_file)
     # SAve grayscale heatmap
     #path_to_file = os.path.join('../results', file_name+'_Cam_Grayscale.png')
     #save_image(activation_map, path_to_file)
+
+
+def custom_save_np_arr(act_map, dst, file_name, obj=""):
+    """
+        Saves cam activation map as a numpy array
+
+    Args:
+        act_map (numpy arr): Activation map (grayscale) 0-1
+        dst (str): Target path of the saving directory
+        file_name (str): File name of the exported image
+        obj (str): Objective, create a new folder if there exists
+    """
+    if obj:
+        dst = os.path.join(dst, obj)
+        os.makedirs(dst, exist_ok=True)
+
+    file_name = ".".join(file_name.split(".")[:-1])
+    path_to_file = os.path.join(dst, file_name + ".npz")
+    np.save(path_to_file, act_map)
 
 
 def apply_colormap_on_image(org_im, activation, colormap_name, alpha=0.4):
@@ -319,7 +344,7 @@ class DictAsMember(dict):
                      for element in value]
 
         return value
-
+        
 
 def get_model(model_meta):
     name = model_meta.name
@@ -355,7 +380,30 @@ def open_image(path):
     return img
 
 
-def get_boxes(gt_src, fn, img):
+def get_mask(f, src, size=None):
+    try:
+        mask = Image.open(os.path.join(src, f))
+    except FileNotFoundError:
+        return None
+
+    mask = mask.resize(size, Image.NEAREST)
+    mask = np.array(mask)
+    mask[mask<127.] = 0
+    mask[mask>127.] = 1
+    return mask
+
+def fit_bbox(mask):
+    bb = []
+    if mask is not None:
+        idxs = np.where(mask == 1)
+        if len(idxs[0]) > 0:
+            xmin, xmax = idxs[1].min(), idxs[1].max() 
+            ymin, ymax = idxs[0].min(), idxs[0].max() 
+            bb.append([xmin, ymin, xmax, ymax])
+    return bb
+
+
+def get_boxes(gt_src, fn, img, size=(None, None)):
     df = pd.read_csv(gt_src)
     idx = df.loc[df.image_name == fn]
     gts = idx.iloc[0]["annotation"]
@@ -377,30 +425,42 @@ def get_boxes(gt_src, fn, img):
                     x.append(float(gt[i]))
                 else:
                     y.append(float(gt[i]))
-            xmin = min(x) / h * 600
-            ymin = min(y) / w * 600
-            xmax = max(x) / h * 600
-            ymax = max(y) / w * 600
+            xmin = min(x) / h * size[0]
+            ymin = min(y) / w * size[1]
+            xmax = max(x) / h * size[0]
+            ymax = max(y) / w * size[1]
             bbs.append([xmin, ymin, xmax, ymax])
 
     return bbs
 
 
-def show_bbox(img, cam, fn, gt_src, color="red", cross_max=True):
+def show_bbox(img, cam, fn, bbox_gt_src=None, mask_gt_src=None, color="black",
+              cross_max=True):
 
-    bbs = get_boxes(gt_src, fn, img)
+    if mask_gt_src:
+        mask = get_mask(fn, mask_gt_src, size=cam.shape)
+        bbs = fit_bbox(mask)
+        # if mask is not None:
+        #     idxs = np.where(mask > 0.5)
+        #     cam[idxs] = 1
+    else:
+        bbs = get_boxes(bbox_gt_src, fn, img, size=np.array(img).shape)
 
-    cam = Image.fromarray(cam)
+    try:
+        cam = Image.fromarray(cam)
+    except TypeError:
+        if len(cam.shape) == 3 and cam.shape[0] == 1:
+            cam = Image.fromarray(cam[0])
     drawer = ImageDraw.Draw(cam)
 
     if cross_max:
         max_val = np.amax(cam)
         loc = np.where(max_val == cam)
         max_loc = tuple(zip(loc[0], loc[1]))[0]
-        xmin, ymin = max_loc[1] - 2, max_loc[0] - 2
-        xmax, ymax = max_loc[1] + 2, max_loc[0] + 2
-        drawer.line((xmin, ymin, xmax, ymax), fill=0, width=2)
-        drawer.line((xmax, ymin, xmin, ymax), fill=0, width=2)
+        xmin, ymin = max_loc[1] - 4, max_loc[0] - 4
+        xmax, ymax = max_loc[1] + 4, max_loc[0] + 4
+        drawer.line((xmin, ymin, xmax, ymax), fill=0, width=4)
+        drawer.line((xmax, ymin, xmin, ymax), fill=0, width=4)
 
     for bb in bbs:
         drawer.rectangle(bb, outline=color, width=2)
@@ -409,3 +469,108 @@ def show_bbox(img, cam, fn, gt_src, color="red", cross_max=True):
         
     return cam
 
+
+def get_tensor_size(x):
+    if isinstance(x, torch.Tensor):
+        return x.element_size() * x.nelement() / 2**20
+    elif isinstance(x, np.ndarray):
+        return x.nbytes / 2**20
+
+
+'''
+def blur_input_array(array, kernel_size=11, sigma=5.):
+    """Blur array with a 2D gaussian blur.
+
+    Args:
+        array: np.array, 3 or 4D tensor to blur.
+        kernel_size: int, size of 2D kernel.
+        sigma: float, standard deviation of gaussian kernel.
+
+    Returns:
+        4D np.array that has been smoothed with gaussian kernel.
+    """
+    ndim = len(array.shape)
+    if ndim == 3:
+        array = array[None]
+    assert ndim == 4
+    num_channels = array.shape[1]
+    
+    x_cord = np.arange(kernel_size)
+    x_grid = x_cord.repeat(kernel_size).reshape(kernel_size, kernel_size)
+    y_grid = x_grid.T
+    xy_grid = np.stack([x_grid, y_grid], axis=-1).float()
+
+    mean = (kernel_size - 1) / 2
+    variance = sigma**2
+
+    gaussian_kernel = (1./(2.*math.pi*variance)) * np.exp(
+        -1*np.sum((xy_grid - mean)**2., axis=-1) /
+        (2.*variance)
+    )
+
+    gaussian_kernel /= np.sum(gaussian_kernel)
+
+    gaussian_kernel = gaussian_kernel[None, None]
+'''
+
+def blur_input_tensor(tensor, kernel_size=11, sigma=5.0):
+    """Blur tensor with a 2D gaussian blur.
+
+    Args:
+        tensor: torch.Tensor, 3 or 4D tensor to blur.
+        kernel_size: int, size of 2D kernel.
+        sigma: float, standard deviation of gaussian kernel.
+
+    Returns:
+        4D torch.Tensor that has been smoothed with gaussian kernel.
+    """
+    ndim = len(tensor.shape)
+    if ndim == 3:
+        tensor = tensor.unsqueeze(0)
+        ndim = len(tensor.shape)
+    assert ndim == 4
+    num_channels = tensor.shape[1]
+    device = tensor.device
+
+    # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
+    x_cord = torch.arange(kernel_size)
+    x_grid = x_cord.repeat(kernel_size).view(kernel_size, kernel_size)
+    y_grid = x_grid.t()
+    xy_grid = torch.stack([x_grid, y_grid], dim=-1).float()
+
+    mean = (kernel_size - 1)/2.
+    variance = sigma**2.
+
+    # Calculate the 2-dimensional gaussian kernel which is
+    # the product of two gaussian distributions for two different
+    # variables (in this case called x and y)
+    gaussian_kernel = (1./(2.*math.pi*variance)) * torch.exp(
+        -1*torch.sum((xy_grid - mean)**2., dim=-1) /
+        (2.*variance)
+    )
+
+    # Make sure sum of values in gaussian kernel equals 1.
+    gaussian_kernel = gaussian_kernel / torch.sum(gaussian_kernel)
+
+    # Reshape to 2d depthwise convolutional weight
+    gaussian_kernel = gaussian_kernel.view(1, 1, kernel_size, kernel_size)
+    gaussian_kernel = gaussian_kernel.repeat(num_channels, 1, 1, 1)
+    gaussian_kernel = gaussian_kernel.to(device)
+
+    padding = nn.ReflectionPad2d(int(mean)).to(device)
+    gaussian_filter = nn.Conv2d(in_channels=num_channels,
+                                out_channels=num_channels,
+                                kernel_size=kernel_size,
+                                groups=num_channels,
+                                bias=False).to(device)
+
+    gaussian_filter.weight.data = gaussian_kernel
+    gaussian_filter.weight.requires_grad = False
+
+    smoothed_tensor = gaussian_filter(padding(tensor))
+
+    return smoothed_tensor
+
+def get_module_by_name(module, access_string):
+    names = access_string.split(sep='.')
+    return reduce(getattr, names, module)
