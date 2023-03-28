@@ -1,0 +1,42 @@
+MODEL:
+    name: resnet34
+    n_classes: 2
+    pretrained: True
+    path:  /home/ilkay/Documents/caner/models/object-CXR_cls/R_34_1x_DA.pt
+    last_layer: [layer2, layer3, layer4, layer4]
+    last_block: [0, 0, 0, 2]
+    phase1: conv1x1
+DATASET:
+    name: object-CXR
+    size: 600
+    path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/object-CXR_test/images/
+    target_class: null
+    MASK:
+        state: false
+        path: null
+    BBOX:
+        state: true
+        path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/object-CXR_test/test.csv
+RESULTS:
+    dir: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/object-CXR_test_v2/
+    alpha: 0.4
+    DRAW_GT_BBOX:
+        state: true
+    POINTING_GAME:
+        state: true
+        tolerance: 25
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    INSERTION_DELETION:
+        state: true
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    IOU_TRACKER:
+        state: true
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+        thr: 0.05
+    save_preds_to: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/object-CXR_test/preds.csv

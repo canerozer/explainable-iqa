@@ -1,0 +1,36 @@
+MODEL:
+    name: resnet50
+    n_classes: 2
+    pretrained: True
+    path: /home/ilkay/Documents/caner/models/lvot_detection_mdai/resnet50/R50_3x_DA_224.pt
+    last_layer: layer4
+    last_block: 2
+    phase1: conv3x3
+DATASET:
+    name: LVOT
+    size: 224
+    path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/mdai/test/
+    target_class: null #0
+    MASK:
+        state: true
+        path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/mdai/test_segm/
+    BBOX:
+        state: false
+        path: null
+RESULTS:
+    dir: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/mdai/test/
+    alpha: 0.4
+    DRAW_GT_BBOX:
+        state: true
+    POINTING_GAME:
+        state: true
+        tolerance: 15
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    INSERTION_DELETION:
+        state: true
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    save_preds_to: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/mdai/test/preds.csv

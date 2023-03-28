@@ -1,0 +1,42 @@
+MODEL:
+    name: EfficientNet_B0
+    n_classes: 2
+    pretrained: True
+    path:  /home/ilkay/Documents/caner/models/object-CXR_cls/EfficientNet_B0/EB0_1x_DA.pt
+    last_layer: [features.0, features.1, features.2, features.3, features.4, features.5, features.6, features.7, features.8, features.8]
+    last_block: [0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+    phase1: conv1x1
+DATASET:
+    name: object-CXR
+    size: 600
+    path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/object-CXR_test/images/
+    target_class: null
+    MASK:
+        state: false
+        path: null
+    BBOX:
+        state: true
+        path: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/input_images/object-CXR_test/test.csv
+RESULTS:
+    dir: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/object-CXR_test/combined_conv1x1_smoothed/
+    alpha: 0.4
+    DRAW_GT_BBOX:
+        state: true
+    POINTING_GAME:
+        state: true
+        tolerance: 25
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    INSERTION_DELETION:
+        state: true
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+    IOU_TRACKER:
+        state: true
+        SMOOTHING:
+            state: true
+            sigma: 1.0
+        thr: 0.05
+    save_preds_to: /home/ilkay/Documents/caner/pytorch-cnn-visualizations/results/visualization_on_image/object-CXR_test/combined_conv1x1_smoothed/preds.csv
